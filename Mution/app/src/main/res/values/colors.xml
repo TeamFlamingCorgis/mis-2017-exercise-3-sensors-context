@@ -4,4 +4,6 @@
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
     <color name="colorText">#FFFFFF</color>
+    <color name="colorActionbar">#FA0000</color>
+    <color name="colorBoringRed">#BA0C0C</color>
 </resources>
