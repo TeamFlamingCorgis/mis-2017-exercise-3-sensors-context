@@ -24,6 +24,6 @@ public class SensorActivity extends AppCompatActivity {
         });
         graph.addSeries(series);
 
-        
+
     }
 }
