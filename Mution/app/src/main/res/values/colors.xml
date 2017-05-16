@@ -6,4 +6,5 @@
     <color name="colorText">#FFFFFF</color>
     <color name="colorActionbar">#FA0000</color>
     <color name="colorBoringRed">#BA0C0C</color>
+    <color name="colorBoringGrey">#777777</color>
 </resources>

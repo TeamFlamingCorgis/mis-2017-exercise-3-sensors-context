@@ -11,12 +11,76 @@
     <com.jjoe64.graphview.GraphView
         android:id="@+id/graph"
         android:layout_width="match_parent"
-        android:layout_height="200dip" />
-
-    <android.support.v7.widget.AppCompatSeekBar
-        android:id="@+id/seekbar"
-        android:layout_below="@id/graph"
+        android:layout_height="200dip"
+        />
+    <com.jjoe64.graphview.GraphView
+        android:id="@+id/graph2"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="200dip"
+        />
+    <TextView
+        android:id="@+id/changeSampleTxt"
+        android:layout_below="@id/graph"
+        android:layout_width="170dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="20dp"
+        android:layout_height="wrap_content"
+        android:text="Sample Rate"
+        android:textSize="18dp"
+        android:textStyle="bold"/>
+    <TextView
+        android:id="@+id/currentSampleRate"
+        android:layout_alignBaseline="@id/changeSampleTxt"
+        android:layout_toRightOf="@id/changeSampleTxt"
+        android:layout_alignRight="@id/graph"
+        android:layout_marginLeft="130dp"
+        android:layout_marginRight="20dp"
+        android:layout_width="70dp"
+        android:layout_height="wrap_content"
+        android:text="0"
+        android:textSize="18dp"
+        android:textAlignment="textEnd"/>
+    <android.support.v7.widget.AppCompatSeekBar
+        android:id="@+id/sbSampleRate"
+        android:layout_below="@id/changeSampleTxt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:max="10"
+        android:progress="0"
+        android:secondaryProgress="0"
+        />
+    <TextView
+        android:id="@+id/changeWindowTxt"
+        android:layout_below="@id/sbSampleRate"
+        android:layout_width="170dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="20dp"
+        android:layout_height="wrap_content"
+        android:text="Window Size"
+        android:textSize="18dp"
+        android:textStyle="bold"/>
+    <TextView
+        android:id="@+id/currentWindowSize"
+        android:layout_alignBaseline="@id/changeWindowTxt"
+        android:layout_toRightOf="@id/changeWindowTxt"
+        android:layout_alignRight="@id/graph"
+        android:layout_marginLeft="130dp"
+        android:layout_marginRight="20dp"
+        android:layout_width="70dp"
+        android:layout_height="wrap_content"
+        android:text="0"
+        android:textSize="18dp"
+        android:textAlignment="textEnd"/>
+    <android.support.v7.widget.AppCompatSeekBar
+        android:id="@+id/sbWindowSize"
+        android:layout_below="@id/changeWindowTxt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:max="10"
+        android:progress="0"
+        android:secondaryProgress="0"
+        />
 
 </RelativeLayout>
