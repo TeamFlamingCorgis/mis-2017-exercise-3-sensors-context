@@ -1,8 +1,7 @@
 package com.example.zeroliam.mution;
 
-import android.app.Activity;
+import com.example.zeroliam.mution.FFT;
 import android.content.Context;
-import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -11,19 +10,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.SeekBar;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.graphics.Color;
 import com.jjoe64.graphview.GraphView;
+import com.jjoe64.graphview.helper.StaticLabelsFormatter;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import android.os.Handler;
 
-public class SensorActivity extends Activity implements SensorEventListener{
+public class SensorActivity extends AppCompatActivity implements SensorEventListener{
 
     private SeekBar sbRate = null;
     private SeekBar sbWindow = null;
@@ -33,9 +27,13 @@ public class SensorActivity extends Activity implements SensorEventListener{
     private long prevTime = 0;
     private float prevX, prevY, prevZ;
     private static final int SHAKE_THRESHOLD = 600;
-    private GraphView graph;
+    private int currentRate;
+    private GraphView graph, fftgraph;
     //X, Y, Z Values
     private LineGraphSeries<DataPoint> valuesX, valuesY, valuesZ, valuesSpeed;
+    //FFT for the X, Y, Z
+    private LineGraphSeries<DataPoint> valuesFFTX, valuesFFTY, valuesFFTZ, valuesFFTSpeed;
+    private FFT fftX,fftY, fftZ, fftSpeed;
 
     //Let's manage the sensor here
     @Override
@@ -46,7 +44,6 @@ public class SensorActivity extends Activity implements SensorEventListener{
             final float x = event.values[0];
             final float y = event.values[1];
             final float z = event.values[2];
-
 
             long currentTime = System.currentTimeMillis();
 
@@ -61,14 +58,31 @@ public class SensorActivity extends Activity implements SensorEventListener{
                     double getCTime = Double.parseDouble(String.valueOf(currentTime));
 
                     DataPoint nex = new DataPoint(getCTime, x);
+                    fftX = new FFT(8);
+//                    fftX.fft();
+//                    DataPoint nexf = new DataPoint(getCTime, Double.parseDouble(String.valueOf(fftX)));
                     DataPoint ney = new DataPoint(getCTime, y);
                     DataPoint nez = new DataPoint(getCTime, z);
+                    DataPoint nem = new DataPoint(getCTime, magnitude);
+
                     valuesX.appendData(nex, false, 100);
                     valuesX.setColor(Color.RED);
+                    valuesX.setTitle("X");
+//                    valuesFFTX.appendData(nexf, false, 100);
+//                    valuesFFTX.setColor(Color.RED);
+//                    valuesFFTX.setTitle("X FFT");
+
                     valuesY.appendData(ney, false, 100);
                     valuesY.setColor(Color.GREEN);
+                    valuesY.setTitle("Y");
+
                     valuesZ.appendData(nez, false, 100);
                     valuesZ.setColor(Color.BLUE);
+                    valuesZ.setTitle("Z");
+
+                    valuesSpeed.appendData(nem, false, 100);
+                    valuesSpeed.setColor(Color.BLACK);
+                    valuesSpeed.setTitle("Speed");
                 }
 
                 prevX = x;
@@ -85,12 +99,12 @@ public class SensorActivity extends Activity implements SensorEventListener{
 
     protected void onPause() {
         super.onPause();
-//        senSensorManager.unregisterListener(this);
+        senSensorManager.unregisterListener(this);
     }
 
     protected void onResume() {
         super.onResume();
-        senSensorManager.registerListener(this, senAccelerometer, SensorManager.SENSOR_DELAY_FASTEST);
+        senSensorManager.registerListener(this, senAccelerometer, getSensorRate(getCurrentRate()));
     }
 
     @Override
@@ -98,33 +112,53 @@ public class SensorActivity extends Activity implements SensorEventListener{
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sensor);
 
-        //Sensor data
-        senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        senSensorManager.registerListener(this, senAccelerometer, SensorManager.SENSOR_DELAY_FASTEST);
-
         //SEEKBAR Sample Rate
+        currentRate = 0;
         sbRate = (SeekBar) findViewById(R.id.sbSampleRate);
         sbWindow = (SeekBar) findViewById(R.id.sbWindowSize);
         changeRateSample = (TextView) findViewById(R.id.currentSampleRate);
         changeWindowSize = (TextView) findViewById(R.id.currentWindowSize);
+        changeRateSample.setText(getSensorRateName(getCurrentRate()));
 
-        //Chart
+        updateCustomSeekbar(sbRate, changeRateSample);
+        updateCustomSeekbar(sbWindow, changeWindowSize);
+
+        //Sensor data
+        senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        senSensorManager.registerListener(this, senAccelerometer, getSensorRate(getCurrentRate()));
+
+        //Chart for the accelerometer
         graph = (GraphView) findViewById(R.id.graph);
-
 
         valuesX = new LineGraphSeries<>();
         valuesY = new LineGraphSeries<>();
         valuesZ = new LineGraphSeries<>();
+        valuesSpeed = new LineGraphSeries<>();
 
         graph.addSeries(valuesX);
         graph.addSeries(valuesY);
         graph.addSeries(valuesZ);
+        graph.addSeries(valuesSpeed);
+        graph.getViewport().setYAxisBoundsManual(true);
+        graph.getViewport().setMinY(-20);
+        graph.getViewport().setMaxY(20);
+        StaticLabelsFormatter staticLabelsFormatter = new StaticLabelsFormatter(graph);
+        staticLabelsFormatter.setHorizontalLabels(new String[] {"past", "read", "incoming"});
+        graph.getGridLabelRenderer().setLabelFormatter(staticLabelsFormatter);
 
+        //Chart for FFT
+        fftgraph = (GraphView) findViewById(R.id.graphFFT);
 
+        valuesFFTX = new LineGraphSeries<>();
+//        valuesFFTY = new LineGraphSeries<>();
+//        valuesFFTZ = new LineGraphSeries<>();
+//        valuesFFTSpeed = new LineGraphSeries<>();
 
-        updateCustomSeekbar(sbRate, changeRateSample);
-        updateCustomSeekbar(sbWindow, changeWindowSize);
+        fftgraph.addSeries(valuesFFTX);
+//        fftgraph.addSeries(valuesFFTY);
+//        fftgraph.addSeries(valuesFFTZ);
+//        fftgraph.addSeries(valuesFFTSpeed);
 
     }
 
@@ -135,6 +169,7 @@ public class SensorActivity extends Activity implements SensorEventListener{
 
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser){
                 progressChanged = progress;
+                setCurrentRate(progress);
                 SensorActivity.super.runOnUiThread(new workingSeekbar(getApplicationContext(), textb, progressChanged));
             }
 
@@ -148,6 +183,60 @@ public class SensorActivity extends Activity implements SensorEventListener{
         });
     }
 
+    public void setCurrentRate(int newRate){
+        currentRate = newRate;
+    }
+
+    public int getCurrentRate(){
+        return currentRate;
+    }
+
+    public int getSensorRate(int prog){
+        int ret = 0;
+        switch (prog){
+            case 0:
+                ret = SensorManager.SENSOR_DELAY_FASTEST;
+                break;
+            case 1:
+                ret = SensorManager.SENSOR_DELAY_GAME;
+                break;
+            case 2:
+                ret = SensorManager.SENSOR_DELAY_NORMAL;
+                break;
+            case 3:
+                ret = SensorManager.SENSOR_DELAY_UI;
+                break;
+            default:
+                ret = SensorManager.SENSOR_DELAY_NORMAL;
+                break;
+        }
+
+        return ret;
+    }
+
+    public String getSensorRateName(int prog){
+        String ret = "";
+        switch (prog){
+            case 0:
+                ret = "SENSOR_DELAY_FASTEST";
+                break;
+            case 1:
+                ret = "SENSOR_DELAY_GAME";
+                break;
+            case 2:
+                ret = "SENSOR_DELAY_NORMAL";
+                break;
+            case 3:
+                ret = "SENSOR_DELAY_UI";
+                break;
+            default:
+                ret = "SENSOR_DELAY_NORMAL";
+                break;
+        }
+
+        return ret;
+    }
+
     public class workingSeekbar implements Runnable {
         //Make the global vars for this class
         Context context;
@@ -158,13 +247,14 @@ public class SensorActivity extends Activity implements SensorEventListener{
         workingSeekbar(Context newContext, TextView newTxtProgress, int newProgress){
             context = newContext;
             currentProgress = newProgress;
+            setCurrentRate(newProgress);
             showTxtProgress = newTxtProgress;
         }
 
         @Override
         public void run() {
             //Make the Toast with the values received as parameters
-            showTxtProgress.setText(String.valueOf(currentProgress));
+            showTxtProgress.setText(String.valueOf(getSensorRateName(currentProgress)));
 
         }
     }
