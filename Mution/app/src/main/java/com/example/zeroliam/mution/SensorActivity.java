@@ -16,8 +16,6 @@ import android.graphics.Color;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
-import com.numetriclabz.numandroidcharts.ChartData;
-import com.numetriclabz.numandroidcharts.MultiLineChart;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -34,15 +32,10 @@ public class SensorActivity extends Activity implements SensorEventListener{
     private Sensor senAccelerometer;
     private long prevTime = 0;
     private float prevX, prevY, prevZ;
-    private static final int SHAKE_THRESHOLD = 200;
+    private static final int SHAKE_THRESHOLD = 600;
     private GraphView graph;
-    private Runnable clearData;
-    private Handler graphHandler;
-    private final Handler mHandler = new Handler();
-    private Runnable mTimer1;
-    private Runnable mTimer2;
     //X, Y, Z Values
-    private LineGraphSeries<DataPoint> valuesX, valuesX2, valuesY, valuesZ, valuesSpeed;
+    private LineGraphSeries<DataPoint> valuesX, valuesY, valuesZ, valuesSpeed;
 
     //Let's manage the sensor here
     @Override
@@ -64,158 +57,25 @@ public class SensorActivity extends Activity implements SensorEventListener{
                 float speed = Math.abs(x + y + z - prevX - prevY - prevZ)/ getBreak * 10000;
                 float magnitude = Math.abs(x + y + z - prevX - prevY - prevZ)/ getBreak;
 
-                if(speed >= 0){
+                if(speed >= 0) {
                     double getCTime = Double.parseDouble(String.valueOf(currentTime));
-                    mTimer1 = new clearUpdate(getApplicationContext(), valuesX, getCTime, x);
-                    mHandler.postDelayed(mTimer1, 300);
 
-                    mTimer2 = new workingUpdate(getApplicationContext(), graph, valuesX, getCTime, x, false, 100, Color.RED);
-                    mHandler.postDelayed(mTimer2, 1000);
-
-//                    (new Thread(){
-//                        public void run(){
-//                            long currentTime = System.currentTimeMillis();
-//                            double getCTime = Double.parseDouble(String.valueOf(currentTime));
-//                            SensorActivity.super.runOnUiThread(new workingToast(getApplicationContext(), "X: " + String.valueOf(x) + " - Y: " + String.valueOf(y) + " - Z: " + String.valueOf(z), Toast.LENGTH_SHORT));
-//                            SensorActivity.super.runOnUiThread(new workingUpdate(getApplicationContext(), graph, valuesX, getCTime, x, false, 100, Color.RED));
-//
-//                        }
-//                    }).start();
+                    DataPoint nex = new DataPoint(getCTime, x);
+                    DataPoint ney = new DataPoint(getCTime, y);
+                    DataPoint nez = new DataPoint(getCTime, z);
+                    valuesX.appendData(nex, false, 100);
+                    valuesX.setColor(Color.RED);
+                    valuesY.appendData(ney, false, 100);
+                    valuesY.setColor(Color.GREEN);
+                    valuesZ.appendData(nez, false, 100);
+                    valuesZ.setColor(Color.BLUE);
                 }
-
-//                if (speed > SHAKE_THRESHOLD) {
-//                    (new Thread(){
-//                        public void run(){
-//                            long currentTime = System.currentTimeMillis();
-//                            double getCTime = Double.parseDouble(String.valueOf(currentTime));
-//                            SensorActivity.super.runOnUiThread(new workingToast(getApplicationContext(), "X: " + String.valueOf(x) + " - Y: " + String.valueOf(y) + " - Z: " + String.valueOf(z), Toast.LENGTH_SHORT));
-//                            SensorActivity.super.runOnUiThread(new workingUpdate(getApplicationContext(), valuesX, getCTime, x, false, 100, Color.RED));
-//
-//                        }
-//                    }).start();
-//                    double getCTime = Double.parseDouble(String.valueOf(currentTime));
-                    //Change the curves here!
-                    //createChart(x,y,z,speed,Float.parseFloat(String.valueOf(getBreak)));
-//                    SensorActivity.super.runOnUiThread(new workingToast(getApplicationContext(), "X: " + String.valueOf(x) + " - Y: " + String.valueOf(y) + " - Z: " + String.valueOf(z), Toast.LENGTH_SHORT));
-//                    SensorActivity.super.runOnUiThread(new workingUpdate(getApplicationContext(), valuesX, getCTime, x, false, 100, Color.RED));
-
-//                    valuesX.appendData(new DataPoint(getCTime, x), false, 100);
-//                    valuesX.setColor(Color.RED);
-//                    valuesY.appendData(new DataPoint(getCTime, y), false, 100);
-//                    valuesY.setColor(Color.GREEN);
-//                    valuesZ.appendData(new DataPoint(getCTime, z), false, 100);
-//                    valuesZ.setColor(Color.BLUE);
-//                    valuesSpeed.appendData(new DataPoint(getCTime, magnitude), false, 100);
-//                    valuesSpeed.setColor(Color.BLACK);
-
-//                }else if(speed == 0){
-//                    (new Thread(){
-//                        public void run(){
-//                            long currentTime = System.currentTimeMillis();
-//                            double getCTime = Double.parseDouble(String.valueOf(currentTime));
-//                            SensorActivity.super.runOnUiThread(new workingToast(getApplicationContext(), "X: " + String.valueOf(x) + " - Y: " + String.valueOf(y) + " - Z: " + String.valueOf(z), Toast.LENGTH_SHORT));
-//                            SensorActivity.super.runOnUiThread(new workingUpdate(getApplicationContext(), valuesX, getCTime, x, false, 100, Color.RED));
-//
-//                        }
-//                    }).start();
-
-//                }
 
                 prevX = x;
                 prevY = y;
                 prevZ = z;
             }
         }
-    }
-
-
-    public class workingToast implements Runnable {
-        //Make the global vars for this class
-        Context context;
-        CharSequence text;
-        int duration;
-
-        //Make the constructor
-        workingToast(Context newContext, CharSequence newText, int newDuration){
-            context = newContext;
-            text = newText;
-            duration = newDuration;
-        }
-
-        @Override
-        public void run() {
-            //Make the Toast with the values received as parameters
-            Toast toast = Toast.makeText(context, text, duration);
-            toast.show();
-        }
-    }
-
-
-    public class workingUpdate implements Runnable {
-        //Make the global vars for this class
-        Context context;
-        GraphView graphy;
-        LineGraphSeries series;
-        double h;
-        double v;
-        boolean scrollable;
-        int tops;
-        int color;
-
-        //Make the constructor
-        workingUpdate(Context newContext, GraphView newGraph, LineGraphSeries newSeries, double newH, double newV, boolean newScrollable, int newTops, int newColor){
-            context = newContext;
-            graphy = newGraph;
-            series = newSeries;
-            h = newH;
-            v = newV;
-            scrollable = newScrollable;
-            tops = newTops;
-            color = newColor;
-        }
-
-        @Override
-        public void run() {
-            //Make the Toast with the values received as parameters
-            createGraph(graphy, series, h, v, scrollable, tops, color);
-        }
-    }
-
-    public class clearUpdate implements Runnable {
-        //Make the global vars for this class
-        Context context;
-        LineGraphSeries series;
-        double h;
-        double v;
-
-        //Make the constructor
-        clearUpdate(Context newContext, LineGraphSeries newSeries, double newH, double newV){
-            context = newContext;
-            series = newSeries;
-            h = newH;
-            v = newV;
-        }
-
-        @Override
-        public void run() {
-            //Make the Toast with the values received as parameters
-            clearGraph(series, h, v);
-            mHandler.postDelayed(this, 300);
-        }
-    }
-
-
-    public void createGraph(GraphView graphy, LineGraphSeries series, double h, double v, boolean scrollable, int tops, int color){
-        //valuesX.appendData(new DataPoint(getCTime, x), false, 100);
-        series.appendData(new DataPoint(h,v),scrollable,tops);
-        series.setColor(color);
-
-        graphy.addSeries(series);
-    }
-
-    public void clearGraph(LineGraphSeries series, double h, double v){
-        //valuesX.appendData(new DataPoint(getCTime, x), false, 100);
-        series.resetData(new DataPoint[]{new DataPoint(0,0)});
     }
 
     @Override
@@ -225,12 +85,12 @@ public class SensorActivity extends Activity implements SensorEventListener{
 
     protected void onPause() {
         super.onPause();
-        senSensorManager.unregisterListener(this);
+//        senSensorManager.unregisterListener(this);
     }
 
     protected void onResume() {
         super.onResume();
-        senSensorManager.registerListener(this, senAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        senSensorManager.registerListener(this, senAccelerometer, SensorManager.SENSOR_DELAY_FASTEST);
     }
 
     @Override
@@ -241,7 +101,7 @@ public class SensorActivity extends Activity implements SensorEventListener{
         //Sensor data
         senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        senSensorManager.registerListener(this, senAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        senSensorManager.registerListener(this, senAccelerometer, SensorManager.SENSOR_DELAY_FASTEST);
 
         //SEEKBAR Sample Rate
         sbRate = (SeekBar) findViewById(R.id.sbSampleRate);
@@ -251,22 +111,15 @@ public class SensorActivity extends Activity implements SensorEventListener{
 
         //Chart
         graph = (GraphView) findViewById(R.id.graph);
-        GraphView graph2 = (GraphView) findViewById(R.id.graph2);
-        valuesX2 = new LineGraphSeries<>();
-        graph2.addSeries(valuesX2);
-        graph2.getViewport().setXAxisBoundsManual(true);
-        graph2.getViewport().setMinX(0);
-        graph2.getViewport().setMaxX(40);
+
 
         valuesX = new LineGraphSeries<>();
         valuesY = new LineGraphSeries<>();
         valuesZ = new LineGraphSeries<>();
-        valuesSpeed = new LineGraphSeries<>();
 
         graph.addSeries(valuesX);
         graph.addSeries(valuesY);
         graph.addSeries(valuesZ);
-        graph.addSeries(valuesSpeed);
 
 
 

@@ -18,9 +18,10 @@ android {
         }
     }
 }
-repositories {
-    maven{
-            url 'https://dl.bintray.com/sj/maven/'
+
+allprojects {
+    repositories {
+        maven { url "https://jitpack.io" }
     }
 }
 
@@ -32,6 +33,5 @@ dependencies {
     compile 'com.android.support:appcompat-v7:25.3.1'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     compile 'com.jjoe64:graphview:4.2.1'
-    compile 'com.numetriclabz.numandroidcharts:numandroidcharts:1.0.3'
     testCompile 'junit:junit:4.12'
 }

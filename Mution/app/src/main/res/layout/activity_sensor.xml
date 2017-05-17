@@ -13,11 +13,6 @@
         android:layout_width="match_parent"
         android:layout_height="200dip"
         />
-    <com.jjoe64.graphview.GraphView
-        android:id="@+id/graph2"
-        android:layout_width="match_parent"
-        android:layout_height="200dip"
-        />
     <TextView
         android:id="@+id/changeSampleTxt"
         android:layout_below="@id/graph"
