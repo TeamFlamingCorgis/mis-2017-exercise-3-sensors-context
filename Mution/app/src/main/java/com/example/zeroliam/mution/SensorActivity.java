@@ -8,6 +8,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.graphics.Color;
@@ -15,6 +16,9 @@ import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.helper.StaticLabelsFormatter;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
+import com.jjoe64.graphview.series.Series;
+
+import android.os.Handler;
 
 
 public class SensorActivity extends AppCompatActivity implements SensorEventListener{
@@ -29,6 +33,9 @@ public class SensorActivity extends AppCompatActivity implements SensorEventList
     private static final int SHAKE_THRESHOLD = 600;
     private int currentRate;
     private GraphView graph, fftgraph;
+    private Handler timerHandler = new Handler();
+    private Runnable graphTimer, graphTimerClear;
+    private DataPoint[] volPoints;
     //X, Y, Z Values
     private LineGraphSeries<DataPoint> valuesX, valuesY, valuesZ, valuesSpeed;
     //FFT for the X, Y, Z
@@ -45,50 +52,34 @@ public class SensorActivity extends AppCompatActivity implements SensorEventList
             final float y = event.values[1];
             final float z = event.values[2];
 
-            long currentTime = System.currentTimeMillis();
+            (new Thread(new Runnable() {
+                @Override
+                public void run() {
 
-            if ((currentTime - prevTime) > 100) {
-                long getBreak = (currentTime - prevTime);
-                prevTime = currentTime;
+                    long currentTime = System.currentTimeMillis();
 
-                float speed = Math.abs(x + y + z - prevX - prevY - prevZ)/ getBreak * 10000;
-                float magnitude = Math.abs(x + y + z - prevX - prevY - prevZ)/ getBreak;
+                    if ((currentTime - prevTime) > 100) {
+                        long getBreak = (currentTime - prevTime);
+                        prevTime = currentTime;
 
-                if(speed >= 0) {
-                    double getCTime = Double.parseDouble(String.valueOf(currentTime));
+                        float speed = Math.abs(x + y + z - prevX - prevY - prevZ) / getBreak * 10000;
 
-                    DataPoint nex = new DataPoint(getCTime, x);
-                    fftX = new FFT(8);
-//                    fftX.fft();
-//                    DataPoint nexf = new DataPoint(getCTime, Double.parseDouble(String.valueOf(fftX)));
-                    DataPoint ney = new DataPoint(getCTime, y);
-                    DataPoint nez = new DataPoint(getCTime, z);
-                    DataPoint nem = new DataPoint(getCTime, magnitude);
+                        if (speed >= 0) {
+                            final double lastTimePoint = (double) System.currentTimeMillis();
 
-                    valuesX.appendData(nex, false, 100);
-                    valuesX.setColor(Color.RED);
-                    valuesX.setTitle("X");
-//                    valuesFFTX.appendData(nexf, false, 100);
-//                    valuesFFTX.setColor(Color.RED);
-//                    valuesFFTX.setTitle("X FFT");
+                            graph.getViewport().setXAxisBoundsManual(true);
+                            graph.getViewport().setMinX(lastTimePoint - (getSensorRate(getCurrentRate()) + 10000));
+                            graph.getViewport().setMaxX(lastTimePoint);
+                            makeData(lastTimePoint, x, y, z);
+                        }
 
-                    valuesY.appendData(ney, false, 100);
-                    valuesY.setColor(Color.GREEN);
-                    valuesY.setTitle("Y");
-
-                    valuesZ.appendData(nez, false, 100);
-                    valuesZ.setColor(Color.BLUE);
-                    valuesZ.setTitle("Z");
-
-                    valuesSpeed.appendData(nem, false, 100);
-                    valuesSpeed.setColor(Color.BLACK);
-                    valuesSpeed.setTitle("Speed");
+                        prevX = x;
+                        prevY = y;
+                        prevZ = z;
+                    }
                 }
+            })).start();
 
-                prevX = x;
-                prevY = y;
-                prevZ = z;
-            }
         }
     }
 
@@ -99,6 +90,8 @@ public class SensorActivity extends AppCompatActivity implements SensorEventList
 
     protected void onPause() {
         super.onPause();
+        timerHandler.removeCallbacks(graphTimer);
+        timerHandler.removeCallbacks(graphTimerClear);
         senSensorManager.unregisterListener(this);
     }
 
@@ -143,45 +136,36 @@ public class SensorActivity extends AppCompatActivity implements SensorEventList
         graph.getViewport().setYAxisBoundsManual(true);
         graph.getViewport().setMinY(-20);
         graph.getViewport().setMaxY(20);
+        graph.getViewport().setXAxisBoundsManual(true);
+        graph.getViewport().setMinX(0);
+        graph.getViewport().setMaxX(100);
         StaticLabelsFormatter staticLabelsFormatter = new StaticLabelsFormatter(graph);
-        staticLabelsFormatter.setHorizontalLabels(new String[] {"past", "read", "incoming"});
+        staticLabelsFormatter.setHorizontalLabels(new String[] {"", ""});
         graph.getGridLabelRenderer().setLabelFormatter(staticLabelsFormatter);
 
         //Chart for FFT
         fftgraph = (GraphView) findViewById(R.id.graphFFT);
 
         valuesFFTX = new LineGraphSeries<>();
-//        valuesFFTY = new LineGraphSeries<>();
-//        valuesFFTZ = new LineGraphSeries<>();
-//        valuesFFTSpeed = new LineGraphSeries<>();
 
         fftgraph.addSeries(valuesFFTX);
-//        fftgraph.addSeries(valuesFFTY);
-//        fftgraph.addSeries(valuesFFTZ);
-//        fftgraph.addSeries(valuesFFTSpeed);
 
     }
 
-    private void updateCustomSeekbar(SeekBar sb, final TextView textb){
+    public void makeData(double getCTime, float x, float y, float z){
+        valuesX.appendData(new DataPoint(getCTime, x), false, 100);
+        valuesX.setColor(Color.RED);
+        valuesX.setTitle("X");
 
-        sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            int progressChanged = 0;
+        valuesY.appendData(new DataPoint(getCTime, y), false, 100);
+        valuesY.setColor(Color.GREEN);
+        valuesY.setTitle("Y");
 
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser){
-                progressChanged = progress;
-                setCurrentRate(progress);
-                SensorActivity.super.runOnUiThread(new workingSeekbar(getApplicationContext(), textb, progressChanged));
-            }
-
-            public void onStartTrackingTouch(SeekBar seekBar) {
-                // TODO Auto-generated method stub
-            }
-
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
-        });
+        valuesZ.appendData(new DataPoint(getCTime, z), false, 100);
+        valuesZ.setColor(Color.BLUE);
+        valuesZ.setTitle("Z");
     }
+
 
     public void setCurrentRate(int newRate){
         currentRate = newRate;
@@ -237,6 +221,27 @@ public class SensorActivity extends AppCompatActivity implements SensorEventList
         return ret;
     }
 
+    private void updateCustomSeekbar(SeekBar sb, final TextView textb){
+
+        sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            int progressChanged = 0;
+
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser){
+                progressChanged = progress;
+                setCurrentRate(progress);
+                SensorActivity.super.runOnUiThread(new workingSeekbar(getApplicationContext(), textb, progressChanged));
+            }
+
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                // TODO Auto-generated method stub
+            }
+
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+    }
+
     public class workingSeekbar implements Runnable {
         //Make the global vars for this class
         Context context;
@@ -258,4 +263,6 @@ public class SensorActivity extends AppCompatActivity implements SensorEventList
 
         }
     }
+
+
 }
