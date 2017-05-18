@@ -27,6 +27,9 @@
  */
 package com.example.zeroliam.mution;
 
+import static java.lang.Math.sqrt;
+import static java.lang.StrictMath.abs;
+
 public class FFT {
 
   int n, m;
@@ -72,10 +75,10 @@ public class FFT {
 	*   Permission to copy and use this program is granted 
 	*   as long as this header is included. 
 	****************************************************************/
-
-  public void fft(double[] x, double[] y) {
+    double[] fft(double[] x, double[] y) {
       int i, j, k, n1, n2, a;
       double c, s, t1, t2;
+      double[] ret = new double[n];
 
       // Bit-reverse
       j = 0;
@@ -119,8 +122,10 @@ public class FFT {
                   y[k + n1] = y[k] - t2;
                   x[k] = x[k] + t1;
                   y[k] = y[k] + t2;
+                  ret[k] = abs(sqrt((x[k+n1]*x[k]) + y[k+n1]*y[k]));
               }
           }
       }
+      return ret;
   }
 }

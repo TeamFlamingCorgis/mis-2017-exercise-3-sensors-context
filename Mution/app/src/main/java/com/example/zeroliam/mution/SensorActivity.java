@@ -6,6 +6,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.support.v4.content.res.TypedArrayUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -20,6 +21,10 @@ import com.jjoe64.graphview.series.Series;
 
 import android.os.Handler;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
+
 
 public class SensorActivity extends AppCompatActivity implements SensorEventListener{
 
@@ -33,14 +38,16 @@ public class SensorActivity extends AppCompatActivity implements SensorEventList
     private static final int SHAKE_THRESHOLD = 600;
     private int currentRate;
     private GraphView graph, fftgraph;
-    private Handler timerHandler = new Handler();
-    private Runnable graphTimer, graphTimerClear;
-    private DataPoint[] volPoints;
+    private Handler theHandler = new Handler();
+    private Runnable theTimer, tim2;
+    private double [] ax1, ax2;
     //X, Y, Z Values
     private LineGraphSeries<DataPoint> valuesX, valuesY, valuesZ, valuesSpeed;
     //FFT for the X, Y, Z
     private LineGraphSeries<DataPoint> valuesFFTX, valuesFFTY, valuesFFTZ, valuesFFTSpeed;
+    private ArrayList<Double> vX, v0;
     private FFT fftX,fftY, fftZ, fftSpeed;
+    private int counter = 0;
 
     //Let's manage the sensor here
     @Override
@@ -51,6 +58,8 @@ public class SensorActivity extends AppCompatActivity implements SensorEventList
             final float x = event.values[0];
             final float y = event.values[1];
             final float z = event.values[2];
+            vX = new ArrayList<Double>();
+            final ArrayList v0 = new ArrayList<Double>();
 
             (new Thread(new Runnable() {
                 @Override
@@ -71,6 +80,10 @@ public class SensorActivity extends AppCompatActivity implements SensorEventList
                             graph.getViewport().setMinX(lastTimePoint - (getSensorRate(getCurrentRate()) + 10000));
                             graph.getViewport().setMaxX(lastTimePoint);
                             makeData(lastTimePoint, x, y, z);
+
+                            double newx = (double) x;
+                            vX.add(newx);
+
                         }
 
                         prevX = x;
@@ -90,8 +103,7 @@ public class SensorActivity extends AppCompatActivity implements SensorEventList
 
     protected void onPause() {
         super.onPause();
-        timerHandler.removeCallbacks(graphTimer);
-        timerHandler.removeCallbacks(graphTimerClear);
+//        theHandler.removeCallbacks(theTimer);
         senSensorManager.unregisterListener(this);
     }
 
@@ -147,6 +159,9 @@ public class SensorActivity extends AppCompatActivity implements SensorEventList
         fftgraph = (GraphView) findViewById(R.id.graphFFT);
 
         valuesFFTX = new LineGraphSeries<>();
+        int rate = 2;
+        fftX = new FFT(rate);
+
 
         fftgraph.addSeries(valuesFFTX);
 
