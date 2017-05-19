@@ -24,6 +24,7 @@ import android.os.Handler;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 
 
 public class SensorActivity extends AppCompatActivity implements SensorEventListener{
@@ -36,7 +37,7 @@ public class SensorActivity extends AppCompatActivity implements SensorEventList
     private long prevTime = 0;
     private float prevX, prevY, prevZ;
     private static final int SHAKE_THRESHOLD = 600;
-    private int currentRate;
+    private int currentRate, currentPro, meh=0;
     private GraphView graph, fftgraph;
     private Handler theHandler = new Handler();
     private Runnable theTimer, tim2;
@@ -58,8 +59,8 @@ public class SensorActivity extends AppCompatActivity implements SensorEventList
             final float x = event.values[0];
             final float y = event.values[1];
             final float z = event.values[2];
-            vX = new ArrayList<Double>();
-            final ArrayList v0 = new ArrayList<Double>();
+            vX = new ArrayList<>();
+            final ArrayList v0 = new ArrayList<>();
 
             (new Thread(new Runnable() {
                 @Override
@@ -67,22 +68,53 @@ public class SensorActivity extends AppCompatActivity implements SensorEventList
 
                     long currentTime = System.currentTimeMillis();
 
-                    if ((currentTime - prevTime) > 100) {
+                    if ((currentTime - prevTime) > (100)) {
                         long getBreak = (currentTime - prevTime);
                         prevTime = currentTime;
 
                         float speed = Math.abs(x + y + z - prevX - prevY - prevZ) / getBreak * 10000;
 
                         if (speed >= 0) {
-                            final double lastTimePoint = (double) System.currentTimeMillis();
+                            double lastTimePoint = (double) System.currentTimeMillis();
 
                             graph.getViewport().setXAxisBoundsManual(true);
-                            graph.getViewport().setMinX(lastTimePoint - (getSensorRate(getCurrentRate()) + 10000));
+                            graph.getViewport().setMinX(lastTimePoint - (currentPro + 10000));
                             graph.getViewport().setMaxX(lastTimePoint);
                             makeData(lastTimePoint, x, y, z);
 
                             double newx = (double) x;
                             vX.add(newx);
+                            if (vX.size()>10){
+                                double[] y2 = new double[vX.size()];
+                                double[] xx2 = new double[vX.size()];
+                                for(int ug = 0; ug < vX.size(); ug++){
+                                    y2[ug] = 0.0;
+                                    xx2[ug] = vX.get(ug);
+                                }
+                                double[] x2 = fftX.fft(xx2,y2);
+//                                Iterator<Book> iterator = bookList.iterator();
+//                                while(iterator.hasNext()){
+//                                    Book c = iterator.next();
+//                                    if(c.getBookName().startsWith(name)){
+//                                        jsonObjec=new JSONObject();
+//                                        jsonObjec.put("label",c.getBookName());
+//                                        jsonObjec.put("value", c.getId());
+//                                        jsonArr.add(jsonObjec);
+//                                    }
+//                                }
+                                Iterator<Double> db = vX.iterator();
+                                int b = 0;
+                                while(db.hasNext()){
+                                    Double a = db.next();
+                                    b++;
+                                    valuesFFTX.appendData(new DataPoint(a,x2[b]),false,100);
+                                }
+//                                for (int mej=0;mej< x2.length;mej++ ){
+//                                    meh++;
+//                                    valuesFFTX.appendData(new DataPoint(mej,x2[mej]),false,100);
+//                                }
+
+                            }
 
                         }
 
@@ -116,6 +148,7 @@ public class SensorActivity extends AppCompatActivity implements SensorEventList
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sensor);
+        SeekBar seek = (SeekBar) findViewById(R.id.sbSampleRate);
 
         //SEEKBAR Sample Rate
         currentRate = 0;
@@ -243,7 +276,7 @@ public class SensorActivity extends AppCompatActivity implements SensorEventList
 
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser){
                 progressChanged = progress;
-                setCurrentRate(progress);
+                currentPro = progress;
                 SensorActivity.super.runOnUiThread(new workingSeekbar(getApplicationContext(), textb, progressChanged));
             }
 
@@ -267,7 +300,7 @@ public class SensorActivity extends AppCompatActivity implements SensorEventList
         workingSeekbar(Context newContext, TextView newTxtProgress, int newProgress){
             context = newContext;
             currentProgress = newProgress;
-            setCurrentRate(newProgress);
+            currentPro = newProgress;
             showTxtProgress = newTxtProgress;
         }
 

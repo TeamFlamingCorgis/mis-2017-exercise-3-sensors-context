@@ -40,9 +40,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="14dp"
-        android:max="4"
-        android:progress="0"
+        android:max="100"
+        android:progress="2"
         android:secondaryProgress="0"
+
         />
 
     <com.jjoe64.graphview.GraphView
